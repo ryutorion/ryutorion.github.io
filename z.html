@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title></title>
+</head>
+<body>
+<canvas id = "canvas" width = "512" height = "512"></canvas>
+<script id = "vertex" type = "x-shader/x-vertex">
+precision mediump float;
+attribute vec4 aPosition;
+uniform vec4 uTranslate;
+
+void main()
+{
+  gl_Position = aPosition + uTranslate;
+}
+</script>
+<script id = "fragment" type = "x-shader/x-fragment">
+precision mediump float;
+
+uniform vec4 uColor;
+
+void main()
+{
+  gl_FragColor = uColor;
+}
+</script>
+<script src = "./Vector3.js"></script>
+<script src = "./Matrix.js"></script>
+<script src = "./FloatView.js"></script>
+<script src = "./FloatArrayView.js"></script>
+<script>
+  function RGBAView(options){
+    return new FloatArrayView({
+      'title' : options.title,
+      'values': [
+        { name : 'R', min : 0.0, max : 1.0, step : 0.01 },
+        { name : 'G', min : 0.0, max : 1.0, step : 0.01 },
+        { name : 'B', min : 0.0, max : 1.0, step : 0.01 },
+        { name : 'A', min : 0.0, max : 1.0, step : 0.01, value : 1.0 },
+      ],
+    });
+  }
+
+  function Vector3View(options){
+    return new FloatArrayView({
+      'title' : options.title,
+      'values': [
+        { name : 'X', min : -2.0, max : 2.0, step : 0.001, value : options.X },
+        { name : 'Y', min : -2.0, max : 2.0, step : 0.001, value : options.Y },
+        { name : 'Z', min : -2.0, max : 2.0, step : 0.001, value : options.Z },
+      ],
+    });
+  }
+
+  function EnumView(options){
+    var label = document.createElement('label');
+    label.appendChild(document.createTextNode(options.label));
+    var select = document.createElement('select');
+    label.appendChild(select);
+
+    var values = options.values;
+    for(var i = 0; i < values.length; ++i){
+      var option = document.createElement('option');
+      option.value = values[i].value;
+      option.appendChild(document.createTextNode(values[i].name));
+      select.appendChild(option);
+    }
+
+    var self = this;
+    select.addEventListener('change', function(){
+      self.value = parseInt(select.options[select.selectedIndex].value);
+    }, false);
+
+    this.element = label;
+    this.value = parseInt(select.options[select.selectedIndex].value);
+  }
+
+  var rgba = new RGBAView({ title : '背景色' });
+  rgba.element.style.width = "300px";
+  rgba.element.style.float = "right";
+  document.body.appendChild(rgba.element);
+
+  var red = new Vector3View({ title : '赤三角', X : 0.05, Y : 0, Z : 1 });
+  red.element.style.width = "300px";
+  red.element.style.float = "right";
+  document.body.appendChild(red.element);
+
+  var green = new Vector3View({ title : '緑三角', X : 0, Y : 0, Z : 0 });
+  green.element.style.width = "300px";
+  green.element.style.float = "right";
+  document.body.appendChild(green.element);
+
+  var canvas = document.querySelector('canvas');
+  canvas.style.resize = 'both';
+  var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  canvas.addEventListener('resize', function(){
+    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+  }, false);
+
+  var depthFunc = new EnumView({
+    'label' : 'DepthFunc',
+    'values': [
+      { name : 'LESS', value : gl.LESS },
+      { name : 'EQUAL', value : gl.EQUAL },
+      { name : 'LEQUAL', value : gl.LEQUAL },
+      { name : 'GREATER', value : gl.GREATER },
+      { name : 'GEQUAL', value : gl.GEQUAL },
+      { name : 'NEVER', value : gl.NEVER },
+    ]
+  });
+  document.body.appendChild(depthFunc.element);
+
+  var clearDepth = new EnumView({
+    'label' : 'ClearDepth',
+    'values': [
+      { name : '1', value : 1 },
+      { name : '0', value : 0 },
+      { name : '-1', value : -1 },
+    ]
+  });
+  document.body.appendChild(clearDepth.element);
+
+  canvas.width = 640;
+  canvas.height = 480;
+  gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+
+  gl.enable(gl.CULL_FACE);
+  gl.enable(gl.DEPTH_TEST);
+
+  function createShader(gl, id)
+  {
+    var src = document.querySelector(id);
+    var shader = null;
+    switch(src.type){
+    case 'x-shader/x-vertex':
+      shader = gl.createShader(gl.VERTEX_SHADER);
+      break;
+    case 'x-shader/x-fragment':
+      shader = gl.createShader(gl.FRAGMENT_SHADER);
+      break;
+    }
+
+    gl.shaderSource(shader, src.text);
+    gl.compileShader(shader);
+
+    if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)){
+      alert(gl.getShaderInfoLog(shader));
+      shader = null;
+    }
+
+    return shader;
+  }
+
+  var vertexShader = createShader(gl, '#vertex');
+  var fragmentShader = createShader(gl, '#fragment');
+  var program = gl.createProgram();
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.linkProgram(program);
+  if(!gl.getProgramParameter(program, gl.LINK_STATUS)){
+    assert(gl.getProgramInfoLog(program));
+    program = null;
+  }
+  gl.useProgram(program);
+
+  var aPosition  = gl.getAttribLocation(program, 'aPosition');
+  var uTranslate = gl.getUniformLocation(program, 'uTranslate');
+  var uColor     = gl.getUniformLocation(program, 'uColor');
+
+  var vertexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    0.5, 0.5, 0.0, 1.0,
+    -0.5, -0.5, 0.0, 1.0,
+    0.5, -0.5, 0.0, 1.0
+  ]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(aPosition);
+  gl.vertexAttribPointer(aPosition, 4, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+  function draw(){
+    gl.depthFunc(depthFunc.value);
+    gl.clearDepth(clearDepth.value);
+
+    gl.clearColor(rgba.R, rgba.G, rgba.B, rgba.A);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    gl.uniform4fv(uTranslate, new Float32Array([red.X, red.Y, red.Z, 0.0]));
+    gl.uniform4fv(uColor, new Float32Array([1.0, 0.0, 0.0, 1.0]));
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    gl.uniform4fv(uTranslate, new Float32Array([green.X, green.Y, green.Z, 0.0]));
+    gl.uniform4fv(uColor, new Float32Array([0.0, 1.0, 0.0, 1.0]));
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    gl.flush();
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+
+</script>
+</body>
+</html>
