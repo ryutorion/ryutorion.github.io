@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>円形に点を表示</title>
+</head>
+<body>
+  <canvas id = "canvas" width = "512" height = "512"></canvas>
+  <script id = "vertex" type = "x-shader/x-vertex">
+  attribute vec4 aPosition;
+
+  void main()
+  {
+      gl_Position = aPosition;
+      gl_PointSize = 10.0;
+  }
+  </script>
+  <script id = "fragment" type = "x-shader/x-fragment">
+  void main()
+  {
+      gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+  }
+  </script>
+  <script>
+    var canvas = document.querySelector('#canvas');
+    var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+    function createShader(gl, id){
+      var src = document.querySelector(id);
+      var shader = null;
+      switch(src.type){
+      case 'x-shader/x-vertex':
+        shader = gl.createShader(gl.VERTEX_SHADER);
+        break;
+      case 'x-shader/x-fragment':
+        shader = gl.createShader(gl.FRAGMENT_SHADER);
+        break;
+      }
+
+      gl.shaderSource(shader, src.text);
+      gl.compileShader(shader);
+
+      if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)){
+        alert(gl.getShaderInfoLog(shader));
+      }
+
+      return shader;
+    }
+
+    var program = gl.createProgram();
+    gl.attachShader(program, createShader(gl, '#vertex'));
+    gl.attachShader(program, createShader(gl, '#fragment'));
+    gl.linkProgram(program);
+    if(!gl.getProgramParameter(program, gl.LINK_STATUS)){
+      alert(gl.getProgramInfoLog(program));
+    }
+    gl.useProgram(program);
+
+    var aPosition = gl.getAttribLocation(program, 'aPosition');
+
+    // 原点からx方向に0.5の位置を開始点とする
+    var vertices = [ 0.5, 0.0 ];
+
+    // 一周を何分割するか
+    var N = 36;
+
+    // 距離1で計算をする
+    var x = 1;
+    var y = 0;
+
+    // e^(Math.PI * 2 / N) に対応するsinとcosを求める
+    var c = Math.cos(Math.PI * 2 / N);
+    var s = Math.sin(Math.PI * 2 / N);
+
+    for(var i = 1; i < N; ++i){
+      // ド・モアブルの定理で次の座標を計算
+      var nx = x * c - y * s;
+      var ny = x * s + y * c;
+
+      // 0.5倍で距離を0.5に
+      vertices.push(nx * 0.5, ny * 0.5);
+
+      // x, yの更新
+      x = nx;
+      y = ny;
+    }
+
+    var vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(aPosition);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+    function draw(){
+      gl.clearColor(0.0, 0.0, 0.0, 1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+      gl.drawArrays(gl.POINTS, 0, vertices.length / 2);
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+
+  </script>
+</body>
+</html>
