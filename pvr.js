@@ -150,6 +150,9 @@ XHR.open('GET', './sample.pvr');
 
 // 読み込み完了時の処理
 XHR.addEventListener('load', function(){
+    var header = new Uint32Array(XHR.response, 0, 13);
+    var tag = Int32ToFourCC(Uint32Array[11]);
+
     // 圧縮テクスチャを渡す
     // gl.compressedTexImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, buffer);
 
