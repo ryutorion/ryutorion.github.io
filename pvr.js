@@ -151,10 +151,37 @@ XHR.open('GET', './sample4.pvr');
 // 読み込み完了時の処理
 XHR.addEventListener('load', function(){
     var header = new Uint32Array(XHR.response, 0, 13);
-    var tag = Int32ToFourCC(Uint32Array[11]);
+    var tag = Int32ToFourCC(header[11]);
 
     if(tag != "PVR!"){
         alert("PVRフォーマットではありません．");
+        return ;
+    }
+
+    var hasAlpha = header[10] != 0 ? true : false;
+    var PVR_TEXTURE_FLAG_TYPE_MASK = 0xff;
+    var PVR_TEXTURE_FLAG_TYPE_PVRTC_2 = 24;
+    var PVR_TEXTURE_FLAG_TYPE_PVRTC_4 = 25;
+
+    var format = 0;
+    switch(header[4] & PVR_TEXTURE_FLAG_TYPE_MASK){
+    case PVR_TEXTURE_FLAG_TYPE_PVRTC_2:
+        if(hasAlpha){
+            format = ct.COMPRESSED_RGBA_PVRTC_2BPPV1_IMG;
+        }else{
+            format = ct.COMPRESSED_RGB_PVRTC_2BPPV1_IMG;
+        }
+        break;
+    case PVR_TEXTURE_FLAG_TYPE_PVRTC_4:
+        if(hasAlpha){
+            format = ct.COMPRESSED_RGBA_PVRTC_4BPPV1_IMG;
+        }else{
+            format = ct.COMPRESSED_RGB_PVRTC_4BPPV1_IMG;
+        }
+        break;
+    default:
+        alert("未知のフォーマットです．\n");
+        return ;
     }
 
     // 圧縮テクスチャを渡す
