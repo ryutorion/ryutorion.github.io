@@ -163,7 +163,14 @@ XHR.addEventListener('load', function(){
     var PVR_TEXTURE_FLAG_TYPE_PVRTC_2 = 24;
     var PVR_TEXTURE_FLAG_TYPE_PVRTC_4 = 25;
 
+    var height = header[1];
+    var width  = header[2];
+
     var format = 0;
+    var blockSize = 0;
+    var blockWidth = 0;
+    var blockHeight = 0;
+    var bpp = 0;
     switch(header[4] & PVR_TEXTURE_FLAG_TYPE_MASK){
     case PVR_TEXTURE_FLAG_TYPE_PVRTC_2:
         if(hasAlpha){
@@ -171,6 +178,10 @@ XHR.addEventListener('load', function(){
         }else{
             format = ct.COMPRESSED_RGB_PVRTC_2BPPV1_IMG;
         }
+        blockSize = 8 * 4;
+        blockWidth = width / 8;
+        blockHeight = height / 4;
+        bpp = 2;
         break;
     case PVR_TEXTURE_FLAG_TYPE_PVRTC_4:
         if(hasAlpha){
@@ -178,11 +189,20 @@ XHR.addEventListener('load', function(){
         }else{
             format = ct.COMPRESSED_RGB_PVRTC_4BPPV1_IMG;
         }
+        blockSize = 4 * 4;
+        blockWidth = width / 4;
+        blockHeight = height / 4;
+        bpp = 4;
         break;
     default:
         alert("未知のフォーマットです．\n");
         return ;
     }
+
+    blockWidth = Math.max(2, blockWidth);
+    blockHeight = Math.max(2, blockHeight);
+
+    var size = blockWidth * blockHeight * ((blockSize / bpp) / 8);
 
     // 圧縮テクスチャを渡す
     // gl.compressedTexImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, buffer);
