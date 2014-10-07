@@ -217,7 +217,7 @@ XHR.addEventListener('load', function(){
     gl.activeTexture(gl.TEXTURE0);
 
     // 描画開始
-    // draw();
+    draw();
 });
 // バイト配列として結果が帰ってくるようにする
 XHR.responseType = 'arraybuffer';
