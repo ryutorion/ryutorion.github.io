@@ -203,9 +203,10 @@ XHR.addEventListener('load', function(){
     blockHeight = Math.max(2, blockHeight);
 
     var size = blockWidth * blockHeight * ((blockSize * bpp) / 8);
+    var buffer = new Uint8Array(XHR.response, 13 * 4, size);
 
     // 圧縮テクスチャを渡す
-    // gl.compressedTexImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, buffer);
+    gl.compressedTexImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, buffer);
 
     // テクスチャのパラメータを設定
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
