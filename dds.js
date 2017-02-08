@@ -167,7 +167,9 @@ XHR.addEventListener('load', function(){
     }
 
 
+    // ブロックのバイトサイズ
     var blockBytes;
+    // フォーマット
     var format;
 
     // DDS_PIXELFORMATのdwFourCCを確認し，1ブロックのサイズと
