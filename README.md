@@ -1,4 +1,4 @@
 ryutorion.github.io
 ===================
 
-Repository for GitHub Pages
+[GitHub Pages‚Ö‚ÌƒŠƒ“ƒN](https://ryutorion.github.io)
