@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>WebGL入門</title>
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/>
+</head>
+<body>
+  <h1>WebGL入門 - 画面のクリア</h1>
+  <p>まずは，WebGLを利用できるようにし，表示領域をクリア(塗りつぶし)する方法を解説します．</p>
+  <h2>canvas要素</h2>
+  <p>
+  WebGLでは，次のような <strong>canvas</strong>要素の表示領域に描画を行います．
+  </p>
+  <pre><code class="html">&lt;canvas id="canvas" width="640" height="480"&gt;&lt;/canvas&gt;</code></pre>
+  <p>
+  canvas要素には，JavaScriptから参照するための<strong>id</strong>と，
+  表示領域の幅(<strong>width</strong>)と高さ(<strong>height</strong>)を設定しておきます．
+  </p>
+  <h2>WebGLRenderingContextの取得</h2>
+  <p>
+  WebGLのAPIを利用するには，canvas要素のDOMオブジェクトの
+  getContext()メソッドに"webgl"を渡すことで，
+  WebGLRenderingContextオブジェクトを取得する必要があります．
+  </p>
+  <p>
+  このオブジェクトは，WebGLの各種APIをメソッドとして持ち，また，そのAPIで
+  必要となる各種定数をフィールドとして持っています．
+  </p>
+  <p>
+  実際の取得処理は次のようになります．
+  なお，このドキュメントを書いている時点では，Internet Explorerを除く主要なブラウザで
+  WebGLが利用可能となっているため，取得できなかった場合の処理は省いています．
+  </p>
+  <pre><code class="javascript">// canvas要素のDOMを取得
+var canvas = document.getElementById("canvas");
+// WebGLRenderingContextの取得
+var gl = canvas.getContext("webgl");</code></pre>
+
+  <h2>画面のクリア</h2>
+  <p>WebGLRenderingContextが取得できれば，あとは画面をクリアするだけです．</p>
+  <p>
+  まず，clearColorメソッドで画面をクリアする色を指定します．
+  仮引数はそれぞれ，R(red, 赤)，G(green 緑)，B(blue, 青)，A(alpha, 不透明度)を0から1の範囲で指定します．
+  </p>
+  <pre><code class="javascript">gl.clearColor(R, G, B, A);</code></pre>
+  <p>
+  画面をクリアする色が決まったら，clearメソッドで実際に画面をクリアします．
+  </p>
+  <p>
+  maskには，何をクリアするのかを指定するのですが，ここではgl.COLOR_BUFFER_BITで画面の色だけをクリアするようにします．後ほど，画面の色以外をクリアする場合が出てきます．
+  </p>
+  <pre><code class="javascript">gl.clear(mask);</code></pre>
+  <h2>まとめ</h2>
+  <p>
+  実際のコードは，次のようになります．
+  </p>
+  <pre><code class="html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;body&gt;
+&lt;canvas id="canvas" width="640" height="480"&gt;&lt;/canvas&gt;
+&lt;script&gt;
+var canvas = document.getElementById("canvas");
+var gl = canvas.getContext("webgl");
+gl.clearColor(0.0, 0.0, 0.0, 1.0);
+gl.clear(gl.COLOR_BUFFER_BIT);
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+  <p>
+  そして，実行結果は次のように真っ黒な画面になります．
+  </p>
+  <canvas id="canvas" width="640" height="480"></canvas>
+  <div><a href="./index.html">目次に戻る</a></div>
+  <script>
+var canvas = document.getElementById("canvas");
+var gl = canvas.getContext("webgl");
+gl.clearColor(0.0, 0.0, 0.0, 1.0);
+gl.clear(gl.COLOR_BUFFER_BIT);
+  </script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>
