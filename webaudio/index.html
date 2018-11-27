@@ -151,12 +151,13 @@ function play()
             {
                 oscillator.frequency.setValueAtTime(note.frequency, t);
                 console.log(`frequency=${note.frequency}, duration=${note.duration}`);
+                gain.gain.setValueAtTime(0.0, t);
+                gain.gain.linearRampToValueAtTime(volume, t + 0.01);
+                gain.gain.linearRampToValueAtTime(0.0, t + note.duration);
                 t += note.duration;
             }
 
             playing_time = Math.max(playing_time, t);
-            gain.gain.setValueAtTime(volume, t - 0.01);
-            gain.gain.linearRampToValueAtTime(0.0, t);
 
             oscillators.push({ oscillator: oscillator, gain: gain });
         }
