@@ -168,7 +168,11 @@ function play()
 function stop()
 {
     master_volume.gain.cancelAndHoldAtTime(0);
-    oscillator.frequency.cancelAndHoldAtTime(0);
+    for(let oscillator of oscillators)
+    {
+        oscillator.oscillator.frequency.cancelAndHoldAtTime(0);
+        oscillator.gain.gain.cancelAndHoldAtTime(0);
+    }
 
     master_volume.gain.linearRampToValueAtTime(0.0, context.currentTime + 0.01);
     playing_time = -1.0;
