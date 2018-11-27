@@ -1,0 +1,179 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"/>
+  <title>Web Audio API</title>
+</head>
+<body>
+  <h1>Web Audio APIによるサウンドプレイヤー</h1>
+  <textarea id="score" cols="80" rows="24">T120 ド4 ファ4 ソ4 ド4 ラ#4_2 ラ4 ソ4 ファ4 ミ4_8 ファ4_8 ソ4 ファ4 ファ4_2 ミ4_2
+T120 ラ3_2 ソ3_2 ファ4_2 ミ4_2 レ4_2 レ4_2 ド4_1
+T120 R_1 ラ#3_2 ド3_2 ラ#3_2 ソ3_2 ソ3_1
+  </textarea>
+  <button onclick="play();">再生</button>
+  <button onclick="stop();">停止</button>
+  <div>
+    テキストエリアに以下のルールで楽譜を記入し，再生ボタンを押すと，曲が流れます．
+  </div>
+  <ul>
+    <li>1行に一連の音を空白区切りで書く．</li>
+    <li>T数字でテンポを指定</li>
+    <li>
+      音は，ド，ド#，レ，レ#，ミ，ファ，ファ#，ソ，ソ#，ラ，ラ#，シの後に音の高さの数値を付ける．
+      ラ4が440Hzで，ラ3が220Hz，というように数値が1下がると1オクターブ下がる．
+    </li>
+    <li>
+      四分音符以外を鳴らしたい場合，音の後に _ (アンダースコア)を付けて，その後に長さを付ける．
+      二分音符であれば2，全音符であれば1，八分音符であれば8，十六分音符であれば16を付ける．
+    </li>
+    <li>休符はRで，四分休符以外は，音と同じく _ (アンダースコア)の後に長さを付ける．</li>
+  <script>
+const BASE_FREQUENCY = {
+    "ド": 261.626,
+    "ド#": 277.183,
+    "レ": 293.665,
+    "レ#": 311.127,
+    "ミ": 329.628,
+    "ファ": 349.228,
+    "ファ#": 369.994,
+    "ソ": 391.995,
+    "ソ#": 415.305,
+    "ラ": 440.0,
+    "ラ#": 466.164,
+    "シ": 493.883
+};
+const score = document.getElementById("score");
+
+let TEMPO = 60.0;
+
+const context = new AudioContext();
+let oscillators = [];
+const master_volume = context.createGain();
+
+master_volume.connect(context.destination);
+master_volume.gain.value = 0.0;
+
+function note_to_frequency(note)
+{
+    if(note[0] == 'R')
+    {
+        return 0;
+    }
+
+    const values = note.split(/\b/);
+    console.log(values);
+    return BASE_FREQUENCY[values[0]] * Math.pow(2.0, values[1] - 4);
+}
+
+function duration(tempo, length)
+{
+    console.log(`tempo=${tempo}, length=${length}`);
+    return 60 / tempo * (4 / length);
+}
+
+function parse()
+{
+    const src = score.value.split(/\n/);
+    console.log(src);
+    const results = [];
+    for(let line of src)
+    {
+        line = line.trim();
+        if(line == "")
+        {
+            continue;
+        }
+
+        console.log(line);
+
+        let result = [];
+        for(let note of line.split(/\s+/))
+        {
+            if(note[0] == 'T')
+            {
+                TEMPO = note.substring(1) - 0;
+            }
+            else
+            {
+                let values = note.split(/_/);
+                console.log(values);
+                result.push({ frequency: note_to_frequency(values[0]), duration: duration(TEMPO, values[1] || 4) });
+            }
+        }
+
+        results.push(result);
+    }
+
+    console.log(results);
+
+    return results;
+}
+
+let playing_time = -1.0;
+let playing = false;
+let started = false;
+function play()
+{
+    master_volume.gain.linearRampToValueAtTime(0.5, context.currentTime + 0.01);
+
+    if(playing_time < context.currentTime)
+    {
+        playing = false;
+    }
+
+    if(!playing)
+    {
+        playing = true;
+
+        for(let oscillator of oscillators)
+        {
+            oscillator.oscillator.disconnect();
+            oscillator.gain.disconnect();
+        }
+        oscillators = [];
+
+        const results = parse();
+        const volume = 1.0 / results.length;
+
+        let current = context.currentTime;
+        let playing_time = -1.0;
+        for(let result of results)
+        {
+            const oscillator = context.createOscillator();
+            const gain = context.createGain();
+            oscillator.connect(gain);
+            gain.connect(master_volume);
+            gain.gain.value = volume;
+            oscillator.start();
+
+            let t = current;
+            for(let note of result)
+            {
+                oscillator.frequency.setValueAtTime(note.frequency, t);
+                console.log(`frequency=${note.frequency}, duration=${note.duration}`);
+                t += note.duration;
+            }
+
+            playing_time = Math.max(playing_time, t);
+            gain.gain.setValueAtTime(volume, t - 0.01);
+            gain.gain.linearRampToValueAtTime(0.0, t);
+
+            oscillators.push({ oscillator: oscillator, gain: gain });
+        }
+        master_volume.gain.setValueAtTime(0.5, playing_time - 0.01);
+        master_volume.gain.linearRampToValueAtTime(0.0, playing_time);
+    }
+}
+
+function stop()
+{
+    master_volume.gain.cancelAndHoldAtTime(0);
+    oscillator.frequency.cancelAndHoldAtTime(0);
+
+    master_volume.gain.linearRampToValueAtTime(0.0, context.currentTime + 0.01);
+    playing_time = -1.0;
+    playing = false;
+}
+  </script>
+</body>
+</html>
